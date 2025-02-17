@@ -1,0 +1,6 @@
+@ska_HostAddress = http://localhost:5178
+
+GET {{ska_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
