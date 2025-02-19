@@ -1,6 +1,6 @@
-namespace UsersAuth.DTOs
+namespace UsersAuth.Models
 {
-    public class LoginDTO
+    public class UserLogin
     {
         public string Username { get; set; }
         public string Password { get; set; }

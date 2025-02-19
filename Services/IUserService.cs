@@ -1,13 +1,15 @@
-using UsersAuth.DTOs;
+using UsersAuth.Models;
+using System.Threading.Tasks;
+using UsersAuth.Enums;
 
 namespace UsersAuth.Services
 {
     public interface IUserService
     {
-        Task<UserDTO> Register(RegisterDTO registerDTO);
-        Task<UserDTO> Login(LoginDTO loginDTO);
-        Task<UserDTO> GetUser(int userId);
-         Task<UserDTO> GetUsername(string username);
-        
+        Task<(ErrorCode,String)> RegisterUser(string username, string email, string hashedPassword);
+        Task<string> AuthenticateUserAsync(string username, string password);
+        bool ValidatePassword(string password);
+        string HashPassword(string password);
+        string GenerateJwtToken(User user);
     }
 }

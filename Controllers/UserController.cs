@@ -1,48 +1,45 @@
-using Microsoft.AspNetCore.Mvc;
-using UsersAuth.DTOs;
+using UsersAuth.Models;
+using UsersAuth.Enums;
 using UsersAuth.Services;
+using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
-namespace UserAuthAPI.Controllers
+namespace UsersAuth.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UserController : ControllerBase
+    public class AuthController : ControllerBase
     {
         private readonly IUserService _userService;
 
-        public UserController(IUserService userService)
+        public AuthController(IUserService userService)
         {
             _userService = userService;
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterDTO registerDTO)
+       public async Task<IActionResult> Register([FromBody] UserRegister userRegistration)
         {
-            var existingUser =  await _userService.GetUsername(registerDTO.Username);
-            if (existingUser != null)
+            var (errorCode, message) = await _userService.RegisterUser(userRegistration.Username, userRegistration.Email, userRegistration.Password);
+            if (errorCode != ErrorCode.Success)
             {
-                return BadRequest("Username already taken.");
+                return BadRequest(message);
             }
-            var user = await _userService.Register(registerDTO);
-            if (user == null) return BadRequest("Registration failed.");
-            return Ok(user);
-            
+
+            return Ok(message); 
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginDTO loginDTO)
+        public async Task<IActionResult> Login([FromBody] UserLogin userLogin)
         {
-            var user = await _userService.Login(loginDTO);
-            if (user == null) return Unauthorized("Invalid credentials.");
-            return Ok(user);
-        }
+            var token = await _userService.AuthenticateUserAsync(userLogin.Username, userLogin.Password);
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetUser(int id)
-        {
-            var user = await _userService.GetUser(id);
-            if (user == null) return NotFound("User not found.");
-            return Ok(user);
+            if (token != null)
+            {
+                return Ok(new { Token = token }); 
+            }
+
+            return Unauthorized();
         }
     }
 }

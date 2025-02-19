@@ -1,6 +1,6 @@
-namespace UsersAuth.DTOs
+namespace UsersAuth.Models
 {
-    public class RegisterDTO
+    public class UserRegister
     {
         public string Username { get; set; }
         public string Email { get; set; }

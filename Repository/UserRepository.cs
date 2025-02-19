@@ -1,51 +1,63 @@
-using Microsoft.EntityFrameworkCore;
-using UsersAuth.Models;
-using UsersAuth.Data;
+using Dapper;
+using Microsoft.Extensions.Configuration;
+using System.Data;
+using Microsoft.Data.SqlClient;
 using System.Threading.Tasks;
+using UsersAuth.Models;
 
 namespace UsersAuth.Repositories
 {
     public class UserRepository : IUserRepository
     {
-        private readonly AppDbContext _context;
+        private readonly string _connectionString;
 
-        public UserRepository(AppDbContext context)
+        public UserRepository(IConfiguration configuration)
         {
-            _context = context;
+            _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
         public async Task<User> RegisterUser(string username, string email, string password)
         {
-            var user = new User
+            using (IDbConnection dbConnection = new SqlConnection(_connectionString))
             {
-                Username = username,
-                Email = email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password)
-            };
+                string sqlQuery = "EXEC [dbo].[User_Register] @Username, @Password, @Email";
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-            return user;
-        }
-
-        public async Task<User> AuthenticateUser(string username, string password)
-        {
-            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-            {
-                return null;
+                var userId = await dbConnection.ExecuteScalarAsync<int>(sqlQuery, new { Username = username, Email = email, Password = password });
+                return new User
+                {
+                    Id = userId,
+                    Username = username,
+                    Email = email,
+                    Password = password
+                };
             }
-            return user;
-        }
-
-        public async Task<User> GetUserById(int id)
-        {
-            return await _context.Users.FindAsync(id);
         }
 
         public async Task<User> GetUserByUsername(string username)
         {
-            return await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
+            using (IDbConnection dbConnection = new SqlConnection(_connectionString))
+            {
+                string sqlQuery = "SELECT * FROM Users WHERE Username = @Username";
+                return await dbConnection.QueryFirstOrDefaultAsync<User>(sqlQuery, new { Username = username });
+            }
+        }
+
+        public async Task<User> GetUserById(int id)
+        {
+            using (IDbConnection dbConnection = new SqlConnection(_connectionString))
+            {
+                string sqlQuery = "SELECT * FROM Users WHERE Id = @Id";
+                return await dbConnection.QueryFirstOrDefaultAsync<User>(sqlQuery, new { Id = id });
+            }
+        }
+
+        public async Task<User> AuthenticateUser(string username, string password)
+        {
+            using (IDbConnection dbConnection = new SqlConnection(_connectionString))
+            {
+                string sqlQuery = "EXEC [dbo].[User_Login] @Username, @Password";
+                return await dbConnection.QueryFirstOrDefaultAsync<User>(sqlQuery, new { Username = username, Password = password });
+            }
         }
     }
 }

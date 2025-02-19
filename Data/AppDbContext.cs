@@ -1,16 +1,21 @@
-using Microsoft.EntityFrameworkCore;
-using UsersAuth.Models;
+using Microsoft.Extensions.Configuration;
+using Npgsql;
+using System.Data;
 
 namespace UsersAuth.Data
 {
-    public class AppDbContext : DbContext
+    public class DbConnectionFactory
     {
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        private readonly string _connectionString;
+
+        public DbConnectionFactory(IConfiguration configuration)
         {
-            optionsBuilder.UseNpgsql("User ID=nita;Password=nita1122;Server=localhost;Port=5432;Database=User");
-            base.OnConfiguring(optionsBuilder);
+            _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
-        public DbSet<User> Users { get; set; }
+        public IDbConnection CreateConnection()
+        {
+            return new NpgsqlConnection(_connectionString);
+        }
     }
 }
